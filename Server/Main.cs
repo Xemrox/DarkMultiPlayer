@@ -32,6 +32,10 @@ namespace DarkMultiPlayerServer
             try
             {
             #endif
+
+                // Set current culture to en-US, to prevent exceptions in any other language than English.
+                Thread.CurrentThread.CurrentCulture = Thread.CurrentThread.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo("en-US");
+                
                 //Start the server clock
                 serverClock = new Stopwatch();
                 serverClock.Start();
