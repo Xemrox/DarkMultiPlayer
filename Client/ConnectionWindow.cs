@@ -2,6 +2,8 @@ using System;
 using DarkMultiPlayerCommon;
 using UnityEngine;
 
+using Language = DarkMultiPlayer.Resources.Client;
+
 namespace DarkMultiPlayer
 {
     public class ConnectionWindow
@@ -118,7 +120,7 @@ namespace DarkMultiPlayer
             GUI.DragWindow(moveRect);
             GUILayout.Space(20);
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Player name:", labelOptions);
+            GUILayout.Label(Language.lblPlayerName, labelOptions);
             string oldPlayerName = Settings.fetch.playerName;
             Settings.fetch.playerName = GUILayout.TextArea(Settings.fetch.playerName, 32, textAreaStyle); // Max 32 characters
             if (oldPlayerName != Settings.fetch.playerName)
@@ -128,11 +130,11 @@ namespace DarkMultiPlayer
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             //Draw add button
-            string addMode = selectedSafe == -1 ? "Add" : "Edit";
+            string addMode = selectedSafe == -1 ? Language.btnAddServer : Language.btnEditServer;
             string buttonAddMode = addMode;
             if (addingServer)
             {
-                buttonAddMode = "Cancel";
+                buttonAddMode = Language.btnCancel;
             }
             addingServer = GUILayout.Toggle(addingServer, buttonAddMode, buttonStyle);
             if (addingServer && !addingServerSafe)
@@ -150,20 +152,20 @@ namespace DarkMultiPlayer
             if (NetworkWorker.fetch.state == DarkMultiPlayerCommon.ClientState.DISCONNECTED)
             {
                 GUI.enabled = (selectedSafe != -1);
-                if (GUILayout.Button("Connect", buttonStyle))
+                if (GUILayout.Button(Language.btnConnect, buttonStyle))
                 {
                     connectEventHandled = false;
                 }
             }
             else
             {
-                if (GUILayout.Button("Disconnect", buttonStyle))
+                if (GUILayout.Button(Language.btnDisconnect, buttonStyle))
                 {
                     disconnectEventHandled = false;
                 }
             }
             //Draw remove button
-            if (GUILayout.Button("Remove", buttonStyle))
+            if (GUILayout.Button(Language.btnRemove, buttonStyle))
             {
                 if (removeEventHandled == true)
                 {
@@ -171,23 +173,23 @@ namespace DarkMultiPlayer
                 }
             }
             GUI.enabled = true;
-            OptionsWindow.fetch.display = GUILayout.Toggle(OptionsWindow.fetch.display, "Options", buttonStyle);
+            OptionsWindow.fetch.display = GUILayout.Toggle(OptionsWindow.fetch.display, Language.btnOptions, buttonStyle);
             GUILayout.EndHorizontal();
             if (addingServerSafe)
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Name:", labelOptions);
+                GUILayout.Label(Language.lblServerName, labelOptions);
                 serverName = GUILayout.TextArea(serverName, textAreaStyle);
                 GUILayout.EndHorizontal();
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Address:", labelOptions);
+                GUILayout.Label(Language.lblServerAddress, labelOptions);
                 serverAddress = GUILayout.TextArea(serverAddress, textAreaStyle).Trim();
                 GUILayout.EndHorizontal();
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Port:", labelOptions);
+                GUILayout.Label(Language.lblServerPort, labelOptions);
                 serverPort = GUILayout.TextArea(serverPort, textAreaStyle).Trim();
                 GUILayout.EndHorizontal();
-                if (GUILayout.Button(addMode + " server", buttonStyle))
+                if (GUILayout.Button(addMode + Language.lblServer, buttonStyle))
                 {
                     if (addEventHandled == true)
                     {
@@ -213,10 +215,10 @@ namespace DarkMultiPlayer
                 }
             }
 
-            GUILayout.Label("Servers:");
+            GUILayout.Label(Language.lblServers);
             if (Settings.fetch.servers.Count == 0)
             {
-                GUILayout.Label("(None - Add a server first)");
+                GUILayout.Label(Language.lblNoServers);
             }
 
             scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Width(WINDOW_WIDTH - 5), GUILayout.Height(WINDOW_HEIGHT - 100));

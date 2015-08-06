@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using UnityEngine;
 
 namespace DarkMultiPlayer
@@ -31,6 +32,9 @@ namespace DarkMultiPlayer
         private bool settingChat;
         private bool settingScreenshot;
         private string toolbarMode;
+        private string languageButtonString;
+        // i18n stuff
+        private CultureInfo currentCulture;
 
         public OptionsWindow()
         {
@@ -68,6 +72,7 @@ namespace DarkMultiPlayer
             tempColor = new Color();
             tempColorLabelStyle = new GUIStyle(GUI.skin.label);
             UpdateToolbarString();
+            UpdateLanguage();
         }
 
         private void UpdateToolbarString()
@@ -86,6 +91,34 @@ namespace DarkMultiPlayer
                 case DMPToolbarType.BOTH_IF_INSTALLED:
                     toolbarMode = "Both if installed";
                     break;
+            }
+        }
+
+        private void UpdateLanguage()
+        {
+            switch (Settings.fetch.currentLanguage)
+            {
+                case SupportedLanguages.Automatic:
+                    languageButtonString = "Automatic";
+                    currentCulture = CultureInfo.InstalledUICulture;
+                    break;
+                case SupportedLanguages.EnglishUS:
+                    currentCulture = CultureInfo.GetCultureInfo("en-US");
+                    break;
+                case SupportedLanguages.BrazilianPortuguese:
+                    currentCulture = CultureInfo.GetCultureInfo("pt-BR");
+                    break;
+            }
+            // Only change the button string if the current language is not set to system default
+            if (Settings.fetch.currentLanguage != SupportedLanguages.Automatic)
+            {
+                languageButtonString = currentCulture.DisplayName;
+            }
+
+            if (currentCulture != null && currentCulture != System.Threading.Thread.CurrentThread.CurrentUICulture)
+            {
+                DarkLog.Debug("Language changed to " + currentCulture.DisplayName);
+                System.Threading.Thread.CurrentThread.CurrentUICulture = currentCulture;
             }
         }
 
@@ -280,6 +313,21 @@ namespace DarkMultiPlayer
                 Settings.fetch.SaveSettings();
                 UpdateToolbarString();
                 ToolbarSupport.fetch.DetectSettingsChange();
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Language:", smallOption);
+            if (GUILayout.Button(languageButtonString, buttonStyle))
+            {
+                int newSetting = (int)Settings.fetch.currentLanguage + 1;
+                //Overflow to 0
+                if (!Enum.IsDefined(typeof(SupportedLanguages), newSetting))
+                {
+                    newSetting = 0;
+                }
+                Settings.fetch.currentLanguage = (SupportedLanguages)newSetting;
+                Settings.fetch.SaveSettings();
+                UpdateLanguage();
             }
             GUILayout.EndHorizontal();
             #if DEBUG
