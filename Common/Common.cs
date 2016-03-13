@@ -514,7 +514,9 @@ namespace DarkMultiPlayerCommon
         LOCK_SYSTEM,
         MOD_DATA,
         SPLIT_MESSAGE,
-        CONNECTION_END
+        CONNECTION_END,
+        EDITOR_SNAPMODECHANGE,
+        EDITOR_PARTEVENT
     }
 
     public enum ServerMessageType
@@ -548,7 +550,9 @@ namespace DarkMultiPlayerCommon
         LOCK_SYSTEM,
         MOD_DATA,
         SPLIT_MESSAGE,
-        CONNECTION_END
+        CONNECTION_END,
+        EDITOR_SNAPMODECHANGE,
+        EDITOR_PARTEVENT
     }
 
     public enum ConnectionStatus

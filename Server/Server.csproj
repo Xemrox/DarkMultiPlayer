@@ -94,9 +94,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\DarkMultiPlayerCommon.csproj">
-      <Project>{423C5A4B-EA79-450D-BD86-5B46141D58D1}</Project>
+      <Project>{423c5a4b-ea79-450d-bd86-5b46141d58d1}</Project>
       <Name>DarkMultiPlayerCommon</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
 </Project>

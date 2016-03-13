@@ -172,6 +172,41 @@ namespace DarkMultiPlayer
             }
         }
 
+        public void SendSnapModeChange(bool mode) {
+            byte[] messageBytes;
+            using (MessageWriter mw = new MessageWriter()) {
+                mw.Write<bool>(mode);
+                messageBytes = mw.GetMessageBytes();
+            }
+            ClientMessage newMessage = new ClientMessage();
+            newMessage.type = ClientMessageType.EDITOR_SNAPMODECHANGE;
+            newMessage.data = messageBytes;
+            QueueOutgoingMessage(newMessage, true);
+        }
+
+        public void SendSymmetryCoordsChange(Space sp) {
+            
+        }
+
+        public void SendSymmetryMethodChange(SymmetryMethod method) {
+            
+        }
+
+        public void SendEditorPartEvent(ConstructionEventType cet, Part p) {
+            Part pn = new Part();
+            ConfigNode cn = new ConfigNode();
+            p.OnSave(cn);
+            pn.OnLoad(cn);
+        }
+
+       public void SendEditorRedo(ShipConstruct sp) {
+            
+        }
+
+        public void SendEditorScreenChange(EditorScreen screen) {
+            
+        }
+
         private void DeleteAllTheControlLocksSoTheSpaceCentreBugGoesAway()
         {
             DarkLog.Debug("Clearing " + InputLockManager.lockStack.Count + " control locks");
