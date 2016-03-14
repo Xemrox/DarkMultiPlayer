@@ -124,6 +124,9 @@ namespace DarkMultiPlayerServer
                     DarkLog.Debug("System.IO compression works: " + Compression.sysIOCompressionWorks + ", test time: " + testTime + " ms.");
                 }
 
+                //Load TechConfig
+                ResearchLibrary.fetch.Load();
+
                 //Set day for log change
                 day = DateTime.Now.Day;
 

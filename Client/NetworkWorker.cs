@@ -10,13 +10,10 @@ using UnityEngine;
 using DarkMultiPlayerCommon;
 using MessageStream2;
 
-namespace DarkMultiPlayer
-{
-    public class NetworkWorker
-    {
+namespace DarkMultiPlayer {
+    public class NetworkWorker {
         //Read from ConnectionWindow
-        public ClientState state
-        {
+        public ClientState state {
             private set;
             get;
         }
@@ -63,62 +60,50 @@ namespace DarkMultiPlayer
         private string serverMotd;
         private bool displayMotd;
 
-        public NetworkWorker()
-        {
-            lock (Client.eventLock)
-            {
+        public NetworkWorker() {
+            lock (Client.eventLock) {
                 Client.updateEvent.Add(this.Update);
             }
         }
 
-        public static NetworkWorker fetch
-        {
-            get
-            {
+        public static NetworkWorker fetch {
+            get {
                 return singleton;
             }
         }
         //Called from main
-        private void Update()
-        {
-            if (terminateThreadsOnNextUpdate)
-            {
+        private void Update() {
+            if (terminateThreadsOnNextUpdate) {
                 terminateThreadsOnNextUpdate = false;
                 TerminateThreads();
             }
 
-            if (state == ClientState.CONNECTED)
-            {
+            if (state == ClientState.CONNECTED) {
                 Client.fetch.status = "Connected";
             }
 
-            if (state == ClientState.HANDSHAKING)
-            {
+            if (state == ClientState.HANDSHAKING) {
                 Client.fetch.status = "Handshaking";
             }
 
-            if (state == ClientState.AUTHENTICATED)
-            {
+            if (state == ClientState.AUTHENTICATED) {
                 NetworkWorker.fetch.SendPlayerStatus(PlayerStatusWorker.fetch.myPlayerStatus);
                 DarkLog.Debug("Sending time sync!");
                 state = ClientState.TIME_SYNCING;
                 Client.fetch.status = "Syncing server clock";
                 SendTimeSync();
             }
-            if (TimeSyncer.fetch.synced && state == ClientState.TIME_SYNCING)
-            {
+            if (TimeSyncer.fetch.synced && state == ClientState.TIME_SYNCING) {
                 DarkLog.Debug("Time Synced!");
                 state = ClientState.TIME_SYNCED;
             }
-            if (state == ClientState.TIME_SYNCED)
-            {
+            if (state == ClientState.TIME_SYNCED) {
                 DarkLog.Debug("Requesting kerbals!");
                 Client.fetch.status = "Syncing kerbals";
                 state = ClientState.SYNCING_KERBALS;
                 SendKerbalsRequest();
             }
-            if (state == ClientState.VESSELS_SYNCED)
-            {
+            if (state == ClientState.VESSELS_SYNCED) {
                 DarkLog.Debug("Vessels Synced!");
                 Client.fetch.status = "Syncing universe time";
                 state = ClientState.TIME_LOCKING;
@@ -134,10 +119,8 @@ namespace DarkMultiPlayer
                 PartKiller.fetch.RegisterGameHooks();
                 KerbalReassigner.fetch.RegisterGameHooks();
             }
-            if (state == ClientState.TIME_LOCKING)
-            {
-                if (TimeSyncer.fetch.locked)
-                {
+            if (state == ClientState.TIME_LOCKING) {
+                if (TimeSyncer.fetch.locked) {
                     DarkLog.Debug("Time Locked!");
                     DarkLog.Debug("Starting Game!");
                     Client.fetch.status = "Starting game";
@@ -145,8 +128,7 @@ namespace DarkMultiPlayer
                     Client.fetch.startGame = true;
                 }
             }
-            if ((state == ClientState.STARTING) && (HighLogic.LoadedScene == GameScenes.SPACECENTER))
-            {
+            if (( state == ClientState.STARTING ) && ( HighLogic.LoadedScene == GameScenes.SPACECENTER )) {
                 state = ClientState.RUNNING;
                 Client.fetch.status = "Running";
                 Client.fetch.gameRunning = true;
@@ -162,8 +144,7 @@ namespace DarkMultiPlayer
                 SendMotdRequest();
                 ToolbarSupport.fetch.EnableToolbar();
             }
-            if (displayMotd && (HighLogic.LoadedScene != GameScenes.LOADING) && (Time.timeSinceLevelLoad > 2f))
-            {
+            if (displayMotd && ( HighLogic.LoadedScene != GameScenes.LOADING ) && ( Time.timeSinceLevelLoad > 2f )) {
                 displayMotd = false;
                 ScenarioWorker.fetch.UpgradeTheAstronautComplexSoTheGameDoesntBugOut();
                 ScreenMessages.PostScreenMessage(serverMotd, 10f, ScreenMessageStyle.UPPER_CENTER);
@@ -172,34 +153,25 @@ namespace DarkMultiPlayer
             }
         }
 
-        private void DeleteAllTheControlLocksSoTheSpaceCentreBugGoesAway()
-        {
+        private void DeleteAllTheControlLocksSoTheSpaceCentreBugGoesAway() {
             DarkLog.Debug("Clearing " + InputLockManager.lockStack.Count + " control locks");
             InputLockManager.ClearControlLocks();
         }
 
         //This isn't tied to frame rate, During the loading screen Update doesn't fire.
-        public void SendThreadMain()
-        {
-            try
-            {
-                while (true)
-                {
+        public void SendThreadMain() {
+            try {
+                while (true) {
                     CheckDisconnection();
                     SendHeartBeat();
                     bool sentMessage = SendOutgoingMessages();
-                    if (!sentMessage)
-                    {
+                    if (!sentMessage) {
                         sendEvent.WaitOne(100);
                     }
                 }
-            }
-            catch (ThreadAbortException)
-            {
+            } catch (ThreadAbortException) {
                 //Don't care
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 DarkLog.Debug("Send thread error: " + e);
             }
         }
@@ -207,8 +179,7 @@ namespace DarkMultiPlayer
         #region Connecting to server
 
         //Called from main
-        public void ConnectToServer(string address, int port)
-        {
+        public void ConnectToServer(string address, int port) {
             DMPServerAddress connectAddress = new DMPServerAddress();
             connectAddress.ip = address;
             connectAddress.port = port;
@@ -218,13 +189,11 @@ namespace DarkMultiPlayer
             connectThread.Start(connectAddress);
         }
 
-        private void ConnectToServerMain(object connectAddress)
-        {
-            DMPServerAddress connectAddressCast = (DMPServerAddress)connectAddress;
+        private void ConnectToServerMain(object connectAddress) {
+            DMPServerAddress connectAddressCast = (DMPServerAddress) connectAddress;
             string address = connectAddressCast.ip;
             int port = connectAddressCast.port;
-            if (state == ClientState.DISCONNECTED)
-            {
+            if (state == ClientState.DISCONNECTED) {
                 DarkLog.Debug("Trying to connect to " + address + ", port " + port);
                 Client.fetch.status = "Connecting to " + address + " port " + port;
                 sendMessageQueueHigh = new Queue<ClientMessage>();
@@ -241,18 +210,13 @@ namespace DarkMultiPlayer
                 receiveSplitMessageBytesLeft = 0;
                 isReceivingSplitMessage = false;
                 IPAddress destinationAddress;
-                if (!IPAddress.TryParse(address, out destinationAddress))
-                {
-                    try
-                    {
+                if (!IPAddress.TryParse(address, out destinationAddress)) {
+                    try {
                         IPHostEntry dnsResult = Dns.GetHostEntry(address);
-                        if (dnsResult.AddressList.Length > 0)
-                        {
+                        if (dnsResult.AddressList.Length > 0) {
                             List<IPEndPoint> addressToConnectTo = new List<IPEndPoint>();
-                            foreach (IPAddress testAddress in dnsResult.AddressList)
-                            {
-                                if (testAddress.AddressFamily == AddressFamily.InterNetwork || testAddress.AddressFamily == AddressFamily.InterNetworkV6)
-                                {
+                            foreach (IPAddress testAddress in dnsResult.AddressList) {
+                                if (testAddress.AddressFamily == AddressFamily.InterNetwork || testAddress.AddressFamily == AddressFamily.InterNetworkV6) {
                                     Interlocked.Increment(ref connectingThreads);
                                     Client.fetch.status = "Connecting";
                                     lastSendTime = UnityEngine.Time.realtimeSinceStartup;
@@ -261,35 +225,27 @@ namespace DarkMultiPlayer
                                     addressToConnectTo.Add(new IPEndPoint(testAddress, port));
                                 }
                             }
-                            foreach (IPEndPoint endpoint in addressToConnectTo)
-                            {
+                            foreach (IPEndPoint endpoint in addressToConnectTo) {
                                 Thread parallelConnectThread = new Thread(new ParameterizedThreadStart(ConnectToServerAddress));
                                 parallelConnectThreads.Add(parallelConnectThread);
                                 parallelConnectThread.Start(endpoint);
                             }
-                            if (addressToConnectTo.Count == 0)
-                            {
+                            if (addressToConnectTo.Count == 0) {
                                 DarkLog.Debug("DNS does not contain a valid address entry");
                                 Client.fetch.status = "DNS does not contain a valid address entry";
                                 return;
                             }
-                        }
-                        else
-                        {
+                        } else {
                             DarkLog.Debug("Address is not a IP or DNS name");
                             Client.fetch.status = "Address is not a IP or DNS name";
                             return;
                         }
-                    }
-                    catch (Exception e)
-                    {
+                    } catch (Exception e) {
                         DarkLog.Debug("DNS Error: " + e.ToString());
                         Client.fetch.status = "DNS Error: " + e.Message;
                         return;
                     }
-                }
-                else
-                {
+                } else {
                     Interlocked.Increment(ref connectingThreads);
                     Client.fetch.status = "Connecting";
                     lastSendTime = UnityEngine.Time.realtimeSinceStartup;
@@ -299,28 +255,22 @@ namespace DarkMultiPlayer
                 }
             }
 
-            while (state == ClientState.CONNECTING)
-            {
+            while (state == ClientState.CONNECTING) {
                 Thread.Sleep(500);
                 CheckInitialDisconnection();
             }
         }
 
-        private void ConnectToServerAddress(object destinationObject)
-        {
-            IPEndPoint destination = (IPEndPoint)destinationObject;
+        private void ConnectToServerAddress(object destinationObject) {
+            IPEndPoint destination = (IPEndPoint) destinationObject;
             TcpClient testConnection = new TcpClient(destination.AddressFamily);
             testConnection.NoDelay = true;
-            try
-            {
+            try {
                 DarkLog.Debug("Connecting to " + destination.Address + " port " + destination.Port + "...");
                 testConnection.Connect(destination.Address, destination.Port);
-                lock (connectLock)
-                {
-                    if (state == ClientState.CONNECTING)
-                    {
-                        if (testConnection.Connected)
-                        {
+                lock (connectLock) {
+                    if (state == ClientState.CONNECTING) {
+                        if (testConnection.Connected) {
                             clientConnection = testConnection;
                             //Timeout didn't expire.
                             DarkLog.Debug("Connected to " + destination.Address + " port " + destination.Port);
@@ -332,37 +282,27 @@ namespace DarkMultiPlayer
                             receiveThread = new Thread(new ThreadStart(StartReceivingIncomingMessages));
                             receiveThread.IsBackground = true;
                             receiveThread.Start();
-                        }
-                        else
-                        {
+                        } else {
                             //The connection actually comes good, but after the timeout, so we can send the disconnect message.
-                            if ((connectingThreads == 1) && (state == ClientState.CONNECTING))
-                            {
+                            if (( connectingThreads == 1 ) && ( state == ClientState.CONNECTING )) {
                                 DarkLog.Debug("Failed to connect within the timeout!");
                                 Disconnect("Initial connection timeout");
                             }
                         }
-                    }
-                    else
-                    {
-                        if (testConnection.Connected)
-                        {
+                    } else {
+                        if (testConnection.Connected) {
                             testConnection.GetStream().Close();
                             testConnection.GetStream().Dispose();
                         }
                     }
                 }
-            }
-            catch (Exception e)
-            {
-                if ((connectingThreads == 1) && (state == ClientState.CONNECTING))
-                {
+            } catch (Exception e) {
+                if (( connectingThreads == 1 ) && ( state == ClientState.CONNECTING )) {
                     HandleDisconnectException(e);
                 }
             }
             Interlocked.Decrement(ref connectingThreads);
-            lock (parallelConnectThreads)
-            {
+            lock (parallelConnectThreads) {
                 parallelConnectThreads.Remove(Thread.CurrentThread);
             }
         }
@@ -371,77 +311,55 @@ namespace DarkMultiPlayer
 
         #region Connection housekeeping
 
-        private void CheckInitialDisconnection()
-        {
-            if (state == ClientState.CONNECTING)
-            {
-                if ((UnityEngine.Time.realtimeSinceStartup - lastReceiveTime) > (Common.INITIAL_CONNECTION_TIMEOUT / 1000))
-                {
+        private void CheckInitialDisconnection() {
+            if (state == ClientState.CONNECTING) {
+                if (( UnityEngine.Time.realtimeSinceStartup - lastReceiveTime ) > ( Common.INITIAL_CONNECTION_TIMEOUT / 1000 )) {
                     Disconnect("Failed to connect!");
                     Client.fetch.status = "Failed to connect - no reply";
-                    if (connectThread != null)
-                    {
-                        try
-                        {
-                            lock (parallelConnectThreads)
-                            {
-                                foreach (Thread parallelConnectThread in parallelConnectThreads)
-                                {
+                    if (connectThread != null) {
+                        try {
+                            lock (parallelConnectThreads) {
+                                foreach (Thread parallelConnectThread in parallelConnectThreads) {
                                     parallelConnectThread.Abort();
                                 }
                                 parallelConnectThreads.Clear();
                                 connectingThreads = 0;
                             }
-                        }
-                        catch
-                        {
+                        } catch {
                         }
                     }
                 }
             }
         }
 
-        private void CheckDisconnection()
-        {
-            if (state >= ClientState.CONNECTED)
-            {
-                if ((UnityEngine.Time.realtimeSinceStartup - lastReceiveTime) > (Common.CONNECTION_TIMEOUT / 1000))
-                {
+        private void CheckDisconnection() {
+            if (state >= ClientState.CONNECTED) {
+                if (( UnityEngine.Time.realtimeSinceStartup - lastReceiveTime ) > ( Common.CONNECTION_TIMEOUT / 1000 )) {
                     Disconnect("Connection timeout");
                 }
             }
         }
 
-        public void Disconnect(string reason)
-        {
-            lock (disconnectLock)
-            {
-                if (state != ClientState.DISCONNECTED)
-                {
+        public void Disconnect(string reason) {
+            lock (disconnectLock) {
+                if (state != ClientState.DISCONNECTED) {
                     DarkLog.Debug("Disconnected, reason: " + reason);
-                    if (!HighLogic.LoadedSceneIsEditor && !HighLogic.LoadedSceneIsFlight)
-                    {
+                    if (!HighLogic.LoadedSceneIsEditor && !HighLogic.LoadedSceneIsFlight) {
                         NetworkWorker.fetch.SendDisconnect("Force quit to main menu");
                         Client.fetch.forceQuit = true;
-                    }
-                    else
-                    {
+                    } else {
                         Client.fetch.displayDisconnectMessage = true;
                     }
                     Client.fetch.status = reason;
                     state = ClientState.DISCONNECTED;
 
-                    try
-                    {
-                        if (clientConnection != null)
-                        {
+                    try {
+                        if (clientConnection != null) {
                             clientConnection.GetStream().Close();
                             clientConnection.Close();
                             clientConnection = null;
                         }
-                    }
-                    catch (Exception e)
-                    {
+                    } catch (Exception e) {
                         DarkLog.Debug("Error closing connection: " + e.Message);
                     }
                     terminateThreadsOnNextUpdate = true;
@@ -449,43 +367,29 @@ namespace DarkMultiPlayer
             }
         }
 
-        private void TerminateThreads()
-        {
-            foreach (Thread parallelConnectThread in parallelConnectThreads)
-            {
-                try
-                {
+        private void TerminateThreads() {
+            foreach (Thread parallelConnectThread in parallelConnectThreads) {
+                try {
                     parallelConnectThread.Abort();
-                }
-                catch
-                {
+                } catch {
                     //Don't care
                 }
             }
             parallelConnectThreads.Clear();
             connectingThreads = 0;
-            try
-            {
+            try {
                 connectThread.Abort();
-            }
-            catch
-            {
+            } catch {
                 //Don't care
             }
-            try
-            {
+            try {
                 sendThread.Abort();
-            }
-            catch
-            {
+            } catch {
                 //Don't care
             }
-            try
-            {
+            try {
                 receiveThread.Abort();
-            }
-            catch
-            {
+            } catch {
                 //Don't care
             }
         }
@@ -494,74 +398,57 @@ namespace DarkMultiPlayer
 
         #region Network writers/readers
 
-        private void StartReceivingIncomingMessages()
-        {
+        private void StartReceivingIncomingMessages() {
             lastReceiveTime = UnityEngine.Time.realtimeSinceStartup;
             //Allocate byte for header
             isReceivingMessage = false;
             receiveMessage = new ServerMessage();
             receiveMessage.data = new byte[8];
             receiveMessageBytesLeft = receiveMessage.data.Length;
-            try
-            {
-                while (true)
-                {
+            try {
+                while (true) {
                     int bytesRead = clientConnection.GetStream().Read(receiveMessage.data, receiveMessage.data.Length - receiveMessageBytesLeft, receiveMessageBytesLeft);
                     bytesReceived += bytesRead;
                     receiveMessageBytesLeft -= bytesRead;
-                    if (bytesRead > 0)
-                    {
+                    if (bytesRead > 0) {
                         lastReceiveTime = UnityEngine.Time.realtimeSinceStartup;
-                    }
-                    else
-                    {
+                    } else {
                         Thread.Sleep(10);
                     }
-                    if (receiveMessageBytesLeft == 0)
-                    {
+                    if (receiveMessageBytesLeft == 0) {
                         //We either have the header or the message data, let's do something
-                        if (!isReceivingMessage)
-                        {
+                        if (!isReceivingMessage) {
                             //We have the header
-                            using (MessageReader mr = new MessageReader(receiveMessage.data))
-                            {
+                            using (MessageReader mr = new MessageReader(receiveMessage.data)) {
                                 int messageType = mr.Read<int>();
                                 int messageLength = mr.Read<int>();
                                 //This is from the little endian -> big endian format change.
                                 //The handshake challange type is 1, and the payload length is always 1032 bytes.
                                 //Little endian (the previous format) DMPServer sends 01 00 00 00 | 08 04 00 00 as the first message, the handshake challange.
-                                if (messageType == 16777216 && messageLength == 134479872)
-                                {
+                                if (messageType == 16777216 && messageLength == 134479872) {
                                     Disconnect("Disconnected from pre-v0.2 DMP server");
                                     return;
                                 }
-                                if (messageType > (Enum.GetNames(typeof(ServerMessageType)).Length - 1))
-                                {
+                                if (messageType > ( Enum.GetNames(typeof(ServerMessageType)).Length - 1 )) {
                                     //Malformed message, most likely from a non DMP-server.
                                     Disconnect("Disconnected from non-DMP server");
                                     //Returning from ReceiveCallback will break the receive loop and stop processing any further messages.
                                     return;
                                 }
-                                receiveMessage.type = (ServerMessageType)messageType;
-                                if (messageLength == 0)
-                                {
+                                receiveMessage.type = (ServerMessageType) messageType;
+                                if (messageLength == 0) {
                                     //Null message, handle it.
                                     receiveMessage.data = null;
                                     HandleMessage(receiveMessage);
                                     receiveMessage.type = 0;
                                     receiveMessage.data = new byte[8];
                                     receiveMessageBytesLeft = receiveMessage.data.Length;
-                                }
-                                else
-                                {
-                                    if (messageLength < Common.MAX_MESSAGE_SIZE)
-                                    {
+                                } else {
+                                    if (messageLength < Common.MAX_MESSAGE_SIZE) {
                                         isReceivingMessage = true;
                                         receiveMessage.data = new byte[messageLength];
                                         receiveMessageBytesLeft = receiveMessage.data.Length;
-                                    }
-                                    else
-                                    {
+                                    } else {
                                         //Malformed message, most likely from a non DMP-server.
                                         Disconnect("Disconnected from non-DMP server");
                                         //Returning from ReceiveCallback will break the receive loop and stop processing any further messages.
@@ -569,9 +456,7 @@ namespace DarkMultiPlayer
                                     }
                                 }
                             }
-                        }
-                        else
-                        {
+                        } else {
                             //We have the message data to a non-null message, handle it
                             isReceivingMessage = false;
                             HandleMessage(receiveMessage);
@@ -580,103 +465,79 @@ namespace DarkMultiPlayer
                             receiveMessageBytesLeft = receiveMessage.data.Length;
                         }
                     }
-                    if (state < ClientState.CONNECTED || state == ClientState.DISCONNECTING)
-                    {
+                    if (state < ClientState.CONNECTED || state == ClientState.DISCONNECTING) {
                         return;
                     }
                 }
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 HandleDisconnectException(e);
             }
         }
 
-        private void QueueOutgoingMessage(ClientMessage message, bool highPriority)
-        {
-            lock (messageQueueLock)
-            {
+        private void QueueOutgoingMessage(ClientMessage message, bool highPriority) {
+            lock (messageQueueLock) {
                 //All messages have an 8 byte header
                 bytesQueuedOut += 8;
-                if (message.data != null && message.data.Length > 0)
-                {
+                if (message.data != null && message.data.Length > 0) {
                     //Count the payload if we have one.
                     bytesQueuedOut += message.data.Length;
                 }
-                if (highPriority)
-                {
+                if (highPriority) {
                     sendMessageQueueHigh.Enqueue(message);
-                }
-                else
-                {
+                } else {
                     sendMessageQueueLow.Enqueue(message);
                 }
             }
             sendEvent.Set();
         }
 
-        private bool SendOutgoingMessages()
-        {
+        private bool SendOutgoingMessages() {
             ClientMessage sendMessage = null;
-            lock (messageQueueLock)
-            {
-                if (state >= ClientState.CONNECTED)
-                {
-                    if (sendMessageQueueHigh.Count > 0)
-                    {
+            lock (messageQueueLock) {
+                if (state >= ClientState.CONNECTED) {
+                    if (sendMessageQueueHigh.Count > 0) {
                         sendMessage = sendMessageQueueHigh.Dequeue();
                     }
-                    if ((sendMessage == null) && (sendMessageQueueSplit.Count > 0))
-                    {
+                    if (( sendMessage == null ) && ( sendMessageQueueSplit.Count > 0 )) {
                         sendMessage = sendMessageQueueSplit.Dequeue();
                         //We just sent the last piece of a split message
-                        if (sendMessageQueueSplit.Count == 0)
-                        {
-                            if (lastSplitMessageType == ClientMessageType.CRAFT_LIBRARY)
-                            {
+                        if (sendMessageQueueSplit.Count == 0) {
+                            if (lastSplitMessageType == ClientMessageType.CRAFT_LIBRARY) {
                                 CraftLibraryWorker.fetch.finishedUploadingCraft = true;
                             }
-                            if (lastSplitMessageType == ClientMessageType.SCREENSHOT_LIBRARY)
-                            {
+                            if (lastSplitMessageType == ClientMessageType.SCREENSHOT_LIBRARY) {
                                 ScreenshotWorker.fetch.finishedUploadingScreenshot = true;
                             }
                         }
                     }
-                    if ((sendMessage == null) && (sendMessageQueueLow.Count > 0))
-                    {
+                    if (( sendMessage == null ) && ( sendMessageQueueLow.Count > 0 )) {
                         sendMessage = sendMessageQueueLow.Dequeue();
                         //Splits large messages to higher priority messages can get into the queue faster
                         SplitAndRewriteMessage(ref sendMessage);
                     }
                 }
             }
-            if (sendMessage != null)
-            {
+            if (sendMessage != null) {
                 SendNetworkMessage(sendMessage);
                 return true;
             }
             return false;
         }
 
-        private void SplitAndRewriteMessage(ref ClientMessage message)
-        {
-            if (message == null)
-            {
+        private void SplitAndRewriteMessage(ref ClientMessage message) {
+            if (message == null) {
                 return;
             }
-            if (message.data == null)
-            {
+            if (message.data == null) {
                 return;
             }
-            if (message.data.Length > Common.SPLIT_MESSAGE_LENGTH)
-            {
+            if (message.data.Length > Common.SPLIT_MESSAGE_LENGTH) {
                 lastSplitMessageType = message.type;
                 ClientMessage newSplitMessage = new ClientMessage();
                 newSplitMessage.type = ClientMessageType.SPLIT_MESSAGE;
                 int splitBytesLeft = message.data.Length;
-                using (MessageWriter mw = new MessageWriter())
-                {
-                    mw.Write<int>((int)message.type);
+                using (MessageWriter mw = new MessageWriter()) {
+                    mw.Write<int>((int) message.type);
                     mw.Write<int>(message.data.Length);
                     byte[] firstSplit = new byte[Common.SPLIT_MESSAGE_LENGTH];
                     Array.Copy(message.data, 0, firstSplit, 0, Common.SPLIT_MESSAGE_LENGTH);
@@ -688,8 +549,7 @@ namespace DarkMultiPlayer
                     sendMessageQueueSplit.Enqueue(newSplitMessage);
                 }
 
-                while (splitBytesLeft > 0)
-                {
+                while (splitBytesLeft > 0) {
                     ClientMessage currentSplitMessage = new ClientMessage();
                     currentSplitMessage.type = ClientMessageType.SPLIT_MESSAGE;
                     currentSplitMessage.data = new byte[Math.Min(splitBytesLeft, Common.SPLIT_MESSAGE_LENGTH)];
@@ -703,50 +563,38 @@ namespace DarkMultiPlayer
             }
         }
 
-        private void SendNetworkMessage(ClientMessage message)
-        {
-            byte[] messageBytes = Common.PrependNetworkFrame((int)message.type, message.data);
+        private void SendNetworkMessage(ClientMessage message) {
+            byte[] messageBytes = Common.PrependNetworkFrame((int) message.type, message.data);
 
-            lock (messageQueueLock)
-            {
+            lock (messageQueueLock) {
                 bytesQueuedOut -= messageBytes.Length;
                 bytesSent += messageBytes.Length;
             }
             //Disconnect after EndWrite completes
-            if (message.type == ClientMessageType.CONNECTION_END)
-            {
-                using (MessageReader mr = new MessageReader(message.data))
-                {
+            if (message.type == ClientMessageType.CONNECTION_END) {
+                using (MessageReader mr = new MessageReader(message.data)) {
                     terminateOnNextMessageSend = true;
                     connectionEndReason = mr.Read<string>();
                 }
             }
             lastSendTime = UnityEngine.Time.realtimeSinceStartup;
-            try
-            {
+            try {
                 clientConnection.GetStream().Write(messageBytes, 0, messageBytes.Length);
-                if (terminateOnNextMessageSend)
-                {
+                if (terminateOnNextMessageSend) {
                     Disconnect("Connection ended: " + connectionEndReason);
                     connectionEndReason = null;
                     terminateOnNextMessageSend = false;
                 }
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 HandleDisconnectException(e);
             }
         }
 
-        private void HandleDisconnectException(Exception e)
-        {
-            if (e.InnerException != null)
-            {
+        private void HandleDisconnectException(Exception e) {
+            if (e.InnerException != null) {
                 DarkLog.Debug("Connection error: " + e.Message + ", " + e.InnerException);
                 Disconnect("Connection error: " + e.Message + ", " + e.InnerException.Message);
-            }
-            else
-            {
+            } else {
                 DarkLog.Debug("Connection error: " + e);
                 Disconnect("Connection error: " + e.Message);
             }
@@ -756,12 +604,9 @@ namespace DarkMultiPlayer
 
         #region Message Handling
 
-        private void HandleMessage(ServerMessage message)
-        {
-            try
-            {
-                switch (message.type)
-                {
+        private void HandleMessage(ServerMessage message) {
+            try {
+                switch (message.type) {
                     case ServerMessageType.HEARTBEAT:
                         break;
                     case ServerMessageType.HANDSHAKE_CHALLANGE:
@@ -848,6 +693,9 @@ namespace DarkMultiPlayer
                     case ServerMessageType.SPLIT_MESSAGE:
                         HandleSplitMessage(message.data);
                         break;
+                    case ServerMessageType.RESEARCH_LIBRARY:
+                        ResearchLibraryWorker.fetch.HandleResearchLibraryMessage(message.data);
+                        break;
                     case ServerMessageType.CONNECTION_END:
                         HandleConnectionEnd(message.data);
                         break;
@@ -855,23 +703,17 @@ namespace DarkMultiPlayer
                         DarkLog.Debug("Unhandled message type " + message.type);
                         break;
                 }
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 DarkLog.Debug("Error handling message type " + message.type + ", exception: " + e);
                 SendDisconnect("Error handling " + message.type + " message");
             }
         }
 
-        private void HandleHandshakeChallange(byte[] messageData)
-        {
-            try
-            {
-                using (MessageReader mr = new MessageReader(messageData))
-                {
+        private void HandleHandshakeChallange(byte[] messageData) {
+            try {
+                using (MessageReader mr = new MessageReader(messageData)) {
                     byte[] challange = mr.Read<byte[]>();
-                    using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(1024))
-                    {
+                    using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(1024)) {
                         rsa.PersistKeyInCsp = false;
                         rsa.FromXmlString(Settings.fetch.playerPrivateKey);
                         byte[] signature = rsa.SignData(challange, CryptoConfig.CreateFromName("SHA256"));
@@ -879,65 +721,49 @@ namespace DarkMultiPlayer
                         state = ClientState.HANDSHAKING;
                     }
                 }
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 DarkLog.Debug("Error handling HANDSHAKE_CHALLANGE message, exception: " + e);
             }
         }
 
-        private void HandleHandshakeReply(byte[] messageData)
-        {
+        private void HandleHandshakeReply(byte[] messageData) {
 
             int reply = 0;
             string reason = "";
             string modFileData = "";
             int serverProtocolVersion = -1;
             string serverVersion = "Unknown";
-            try
-            {
-                using (MessageReader mr = new MessageReader(messageData))
-                {
+            try {
+                using (MessageReader mr = new MessageReader(messageData)) {
                     reply = mr.Read<int>();
                     reason = mr.Read<string>();
-                    try
-                    {
+                    try {
                         serverProtocolVersion = mr.Read<int>();
                         serverVersion = mr.Read<string>();
-                    }
-                    catch
-                    {
+                    } catch {
                         //We don't care about this throw on pre-protocol-9 servers.
                     }
                     //If we handshook successfully, the mod data will be available to read.
-                    if (reply == 0)
-                    {
+                    if (reply == 0) {
                         Compression.compressionEnabled = mr.Read<bool>() && Settings.fetch.compressionEnabled;
-                        ModWorker.fetch.modControl = (ModControlMode)mr.Read<int>();
-                        if (ModWorker.fetch.modControl != ModControlMode.DISABLED)
-                        {
+                        ModWorker.fetch.modControl = (ModControlMode) mr.Read<int>();
+                        if (ModWorker.fetch.modControl != ModControlMode.DISABLED) {
                             modFileData = mr.Read<string>();
                         }
                     }
                 }
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 DarkLog.Debug("Error handling HANDSHAKE_REPLY message, exception: " + e);
                 reply = 99;
                 reason = "Incompatible HANDSHAKE_REPLY message";
             }
-            switch (reply)
-            {
+            switch (reply) {
                 case 0:
                     {
-                        if (ModWorker.fetch.ParseModFile(modFileData))
-                        {
+                        if (ModWorker.fetch.ParseModFile(modFileData)) {
                             DarkLog.Debug("Handshake successful");
                             state = ClientState.AUTHENTICATED;
-                        }
-                        else
-                        {
+                        } else {
                             DarkLog.Debug("Failed to pass mod validation");
                             SendDisconnect("Failed mod validation");
                         }
@@ -946,29 +772,22 @@ namespace DarkMultiPlayer
                 default:
                     string disconnectReason = "Handshake failure: " + reason;
                     //If it's a protocol mismatch, append the client/server version.
-                    if (reply == 1)
-                    {
+                    if (reply == 1) {
                         string clientTrimmedVersion = Common.PROGRAM_VERSION;
                         //Trim git tags
-                        if (Common.PROGRAM_VERSION.Length == 40)
-                        {
+                        if (Common.PROGRAM_VERSION.Length == 40) {
                             clientTrimmedVersion = Common.PROGRAM_VERSION.Substring(0, 7);
                         }
                         string serverTrimmedVersion = serverVersion;
-                        if (serverVersion.Length == 40)
-                        {
+                        if (serverVersion.Length == 40) {
                             serverTrimmedVersion = serverVersion.Substring(0, 7);
                         }
                         disconnectReason += "\nClient: " + clientTrimmedVersion + ", Server: " + serverTrimmedVersion;
                         //If they both aren't a release version, display the actual protocol version.
-                        if (!serverVersion.Contains("v") || !Common.PROGRAM_VERSION.Contains("v"))
-                        {
-                            if (serverProtocolVersion != -1)
-                            {
+                        if (!serverVersion.Contains("v") || !Common.PROGRAM_VERSION.Contains("v")) {
+                            if (serverProtocolVersion != -1) {
                                 disconnectReason += "\nClient protocol: " + Common.PROTOCOL_VERSION + ", Server: " + serverProtocolVersion;
-                            }
-                            else
-                            {
+                            } else {
                                 disconnectReason += "\nClient protocol: " + Common.PROTOCOL_VERSION + ", Server: 8-";
                             }
                         }
@@ -979,22 +798,17 @@ namespace DarkMultiPlayer
             }
         }
 
-        private void HandleChatMessage(byte[] messageData)
-        {
-            using (MessageReader mr = new MessageReader(messageData))
-            {
-                ChatMessageType chatMessageType = (ChatMessageType)mr.Read<int>();
+        private void HandleChatMessage(byte[] messageData) {
+            using (MessageReader mr = new MessageReader(messageData)) {
+                ChatMessageType chatMessageType = (ChatMessageType) mr.Read<int>();
 
-                switch (chatMessageType)
-                {
+                switch (chatMessageType) {
                     case ChatMessageType.LIST:
                         {
                             string[] playerList = mr.Read<string[]>();
-                            foreach (string playerName in playerList)
-                            {
+                            foreach (string playerName in playerList) {
                                 string[] channelList = mr.Read<string[]>();
-                                foreach (string channelName in channelList)
-                                {
+                                foreach (string channelName in channelList) {
                                     ChatWorker.fetch.QueueChatJoin(playerName, channelName);
                                 }
                             }
@@ -1027,8 +841,7 @@ namespace DarkMultiPlayer
                             string fromPlayer = mr.Read<string>();
                             string toPlayer = mr.Read<string>();
                             string privateMessage = mr.Read<string>();
-                            if (toPlayer == Settings.fetch.playerName || fromPlayer == Settings.fetch.playerName)
-                            {
+                            if (toPlayer == Settings.fetch.playerName || fromPlayer == Settings.fetch.playerName) {
                                 ChatWorker.fetch.QueuePrivateMessage(fromPlayer, toPlayer, privateMessage);
                             }
                         }
@@ -1043,26 +856,21 @@ namespace DarkMultiPlayer
             }
         }
 
-        private void HandleServerSettings(byte[] messageData)
-        {
-            using (MessageReader mr = new MessageReader(messageData))
-            {
-                WarpWorker.fetch.warpMode = (WarpMode)mr.Read<int>();
-                Client.fetch.gameMode = (GameMode)mr.Read<int>();
+        private void HandleServerSettings(byte[] messageData) {
+            using (MessageReader mr = new MessageReader(messageData)) {
+                WarpWorker.fetch.warpMode = (WarpMode) mr.Read<int>();
+                Client.fetch.gameMode = (GameMode) mr.Read<int>();
                 Client.fetch.serverAllowCheats = mr.Read<bool>();
                 numberOfKerbals = mr.Read<int>();
                 numberOfVessels = mr.Read<int>();
                 ScreenshotWorker.fetch.screenshotHeight = mr.Read<int>();
                 AsteroidWorker.fetch.maxNumberOfUntrackedAsteroids = mr.Read<int>();
                 ChatWorker.fetch.consoleIdentifier = mr.Read<string>();
-                Client.fetch.serverDifficulty = (GameDifficulty)mr.Read<int>();
+                Client.fetch.serverDifficulty = (GameDifficulty) mr.Read<int>();
                 VesselWorker.fetch.safetyBubbleDistance = mr.Read<float>();
-                if (Client.fetch.serverDifficulty != GameDifficulty.CUSTOM)
-                {
-                    Client.fetch.serverParameters = GameParameters.GetDefaultParameters(Client.fetch.ConvertGameMode(Client.fetch.gameMode), (GameParameters.Preset)Client.fetch.serverDifficulty);
-                }
-                else
-                {
+                if (Client.fetch.serverDifficulty != GameDifficulty.CUSTOM) {
+                    Client.fetch.serverParameters = GameParameters.GetDefaultParameters(Client.fetch.ConvertGameMode(Client.fetch.gameMode), (GameParameters.Preset) Client.fetch.serverDifficulty);
+                } else {
                     GameParameters newParameters = new GameParameters();
                     newParameters.Difficulty.AllowStockVessels = mr.Read<bool>();
                     newParameters.Difficulty.AutoHireCrews = mr.Read<bool>();
@@ -1084,10 +892,8 @@ namespace DarkMultiPlayer
             }
         }
 
-        private void HandlePlayerStatus(byte[] messageData)
-        {
-            using (MessageReader mr = new MessageReader(messageData))
-            {
+        private void HandlePlayerStatus(byte[] messageData) {
+            using (MessageReader mr = new MessageReader(messageData)) {
                 string playerName = mr.Read<string>();
                 string vesselText = mr.Read<string>();
                 string statusText = mr.Read<string>();
@@ -1099,19 +905,15 @@ namespace DarkMultiPlayer
             }
         }
 
-        private void HandlePlayerJoin(byte[] messageData)
-        {
-            using (MessageReader mr = new MessageReader(messageData))
-            {
+        private void HandlePlayerJoin(byte[] messageData) {
+            using (MessageReader mr = new MessageReader(messageData)) {
                 string playerName = mr.Read<string>();
                 ChatWorker.fetch.QueueChannelMessage(ChatWorker.fetch.consoleIdentifier, "", playerName + " has joined the server");
             }
         }
 
-        private void HandlePlayerDisconnect(byte[] messageData)
-        {
-            using (MessageReader mr = new MessageReader(messageData))
-            {
+        private void HandlePlayerDisconnect(byte[] messageData) {
+            using (MessageReader mr = new MessageReader(messageData)) {
                 string playerName = mr.Read<string>();
                 WarpWorker.fetch.RemovePlayer(playerName);
                 PlayerStatusWorker.fetch.RemovePlayerStatus(playerName);
@@ -1121,10 +923,8 @@ namespace DarkMultiPlayer
             }
         }
 
-        private void HandleSyncTimeReply(byte[] messageData)
-        {
-            using (MessageReader mr = new MessageReader(messageData))
-            {
+        private void HandleSyncTimeReply(byte[] messageData) {
+            using (MessageReader mr = new MessageReader(messageData)) {
                 long clientSend = mr.Read<long>();
                 long serverReceive = mr.Read<long>();
                 long serverSend = mr.Read<long>();
@@ -1132,21 +932,15 @@ namespace DarkMultiPlayer
             }
         }
 
-        private void HandleScenarioModuleData(byte[] messageData)
-        {
-            using (MessageReader mr = new MessageReader(messageData))
-            {
+        private void HandleScenarioModuleData(byte[] messageData) {
+            using (MessageReader mr = new MessageReader(messageData)) {
                 string[] scenarioName = mr.Read<string[]>();
-                for (int i = 0; i < scenarioName.Length; i++)
-                {
+                for (int i = 0; i < scenarioName.Length; i++) {
                     byte[] scenarioData = Compression.DecompressIfNeeded(mr.Read<byte[]>());
                     ConfigNode scenarioNode = ConfigNodeSerializer.fetch.Deserialize(scenarioData);
-                    if (scenarioNode != null)
-                    {
+                    if (scenarioNode != null) {
                         ScenarioWorker.fetch.QueueScenarioData(scenarioName[i], scenarioNode);
-                    }
-                    else
-                    {
+                    } else {
                         DarkLog.Debug("Scenario data has been lost for " + scenarioName[i]);
                         ScreenMessages.PostScreenMessage("Scenario data has been lost for " + scenarioName[i], 5f, ScreenMessageStyle.UPPER_CENTER);
                     }
@@ -1154,112 +948,82 @@ namespace DarkMultiPlayer
             }
         }
 
-        private void HandleKerbalReply(byte[] messageData)
-        {
+        private void HandleKerbalReply(byte[] messageData) {
             numberOfKerbalsReceived++;
-            using (MessageReader mr = new MessageReader(messageData))
-            {
+            using (MessageReader mr = new MessageReader(messageData)) {
                 double planetTime = mr.Read<double>();
                 string kerbalName = mr.Read<string>();
                 byte[] kerbalData = mr.Read<byte[]>();
                 ConfigNode kerbalNode = ConfigNodeSerializer.fetch.Deserialize(kerbalData);
-                if (kerbalNode != null)
-                {
+                if (kerbalNode != null) {
                     VesselWorker.fetch.QueueKerbal(planetTime, kerbalName, kerbalNode);
-                }
-                else
-                {
+                } else {
                     DarkLog.Debug("Failed to load kerbal!");
                 }
             }
-            if (state == ClientState.SYNCING_KERBALS)
-            {
-                if (numberOfKerbals != 0)
-                {
-                    Client.fetch.status = "Syncing kerbals " + numberOfKerbalsReceived + "/" + numberOfKerbals + " (" + (int)((numberOfKerbalsReceived / (float)numberOfKerbals) * 100) + "%)";
+            if (state == ClientState.SYNCING_KERBALS) {
+                if (numberOfKerbals != 0) {
+                    Client.fetch.status = "Syncing kerbals " + numberOfKerbalsReceived + "/" + numberOfKerbals + " (" + (int) ( ( numberOfKerbalsReceived / (float) numberOfKerbals ) * 100 ) + "%)";
                 }
             }
         }
 
-        private void HandleKerbalComplete()
-        {
+        private void HandleKerbalComplete() {
             state = ClientState.KERBALS_SYNCED;
             DarkLog.Debug("Kerbals Synced!");
             Client.fetch.status = "Kerbals synced";
         }
 
-        private void HandleVesselList(byte[] messageData)
-        {
+        private void HandleVesselList(byte[] messageData) {
             state = ClientState.SYNCING_VESSELS;
             Client.fetch.status = "Syncing vessels";
-            using (MessageReader mr = new MessageReader(messageData))
-            {
+            using (MessageReader mr = new MessageReader(messageData)) {
                 List<string> serverVessels = new List<string>(mr.Read<string[]>());
                 List<string> cacheObjects = new List<string>(UniverseSyncCache.fetch.GetCachedObjects());
                 List<string> requestedObjects = new List<string>();
-                foreach (string serverVessel in serverVessels)
-                {
-                    if (!cacheObjects.Contains(serverVessel))
-                    {
+                foreach (string serverVessel in serverVessels) {
+                    if (!cacheObjects.Contains(serverVessel)) {
                         requestedObjects.Add(serverVessel);
-                    }
-                    else
-                    {
+                    } else {
                         bool added = false;
                         byte[] vesselBytes = UniverseSyncCache.fetch.GetFromCache(serverVessel);
-                        if (vesselBytes.Length != 0)
-                        {
+                        if (vesselBytes.Length != 0) {
                             ConfigNode vesselNode = ConfigNodeSerializer.fetch.Deserialize(vesselBytes);
-                            if (vesselNode != null)
-                            {
+                            if (vesselNode != null) {
                                 string vesselIDString = Common.ConvertConfigStringToGUIDString(vesselNode.GetValue("pid"));
-                                if (vesselIDString != null)
-                                {
+                                if (vesselIDString != null) {
                                     Guid vesselID = new Guid(vesselIDString);
-                                    if (vesselID != Guid.Empty)
-                                    {
+                                    if (vesselID != Guid.Empty) {
                                         VesselWorker.fetch.QueueVesselProto(vesselID, 0, vesselNode);
                                         added = true;
                                         numberOfVesselsReceived++;
-                                    }
-                                    else
-                                    {
+                                    } else {
                                         DarkLog.Debug("Cached object " + serverVessel + " is damaged - Returned GUID.Empty");
                                     }
-                                }
-                                else
-                                {
+                                } else {
                                     DarkLog.Debug("Cached object " + serverVessel + " is damaged - Failed to get vessel ID");
                                 }
-                            }
-                            else
-                            {
+                            } else {
                                 DarkLog.Debug("Cached object " + serverVessel + " is damaged - Failed to create a config node");
                             }
-                        }
-                        else
-                        {
+                        } else {
                             DarkLog.Debug("Cached object " + serverVessel + " is damaged - Object is a 0 length file!");
                         }
-                        if (!added)
-                        {
+                        if (!added) {
                             requestedObjects.Add(serverVessel);
                         }
                     }
                 }
-                if (numberOfVessels != 0)
-                {
-                    Client.fetch.status = "Syncing vessels " + numberOfVesselsReceived + "/" + numberOfVessels + " (" + (int)((numberOfVesselsReceived / (float)numberOfVessels) * 100) + "%)";
+                if (numberOfVessels != 0) {
+                    Client.fetch.status = "Syncing vessels " + numberOfVesselsReceived + "/" + numberOfVessels + " (" + (int) ( ( numberOfVesselsReceived / (float) numberOfVessels ) * 100 ) + "%)";
                 }
                 SendVesselsRequest(requestedObjects.ToArray());
             }
         }
 
-        private void HandleVesselProto(byte[] messageData)
-        {
+        private void HandleVesselProto(byte[] messageData) {
             numberOfVesselsReceived++;
-            using (MessageReader mr = new MessageReader(messageData))
-            {
+            using (MessageReader mr = new MessageReader(messageData)) {
                 double planetTime = mr.Read<double>();
                 string vesselID = mr.Read<string>();
                 //Docking - don't care.
@@ -1269,42 +1033,31 @@ namespace DarkMultiPlayer
                 byte[] vesselData = Compression.DecompressIfNeeded(mr.Read<byte[]>());
                 UniverseSyncCache.fetch.QueueToCache(vesselData);
                 ConfigNode vesselNode = ConfigNodeSerializer.fetch.Deserialize(vesselData);
-                if (vesselNode != null)
-                {
+                if (vesselNode != null) {
                     string configGuid = vesselNode.GetValue("pid");
-                    if (!String.IsNullOrEmpty(configGuid) && vesselID == Common.ConvertConfigStringToGUIDString(configGuid))
-                    {
+                    if (!String.IsNullOrEmpty(configGuid) && vesselID == Common.ConvertConfigStringToGUIDString(configGuid)) {
                         VesselWorker.fetch.QueueVesselProto(new Guid(vesselID), planetTime, vesselNode);
-                    }
-                    else
-                    {
+                    } else {
                         DarkLog.Debug("Failed to load vessel " + vesselID + "!");
                     }
-                }
-                else
-                {
+                } else {
                     DarkLog.Debug("Failed to load vessel" + vesselID + "!");
                 }
             }
-            if (state == ClientState.SYNCING_VESSELS)
-            {
-                if (numberOfVessels != 0)
-                {
-                    if (numberOfVesselsReceived > numberOfVessels)
-                    {
+            if (state == ClientState.SYNCING_VESSELS) {
+                if (numberOfVessels != 0) {
+                    if (numberOfVesselsReceived > numberOfVessels) {
                         //Received 102 / 101 vessels!
                         numberOfVessels = numberOfVesselsReceived;
                     }
-                    Client.fetch.status = "Syncing vessels " + numberOfVesselsReceived + "/" + numberOfVessels + " (" + (int)((numberOfVesselsReceived / (float)numberOfVessels) * 100) + "%)";
+                    Client.fetch.status = "Syncing vessels " + numberOfVesselsReceived + "/" + numberOfVessels + " (" + (int) ( ( numberOfVesselsReceived / (float) numberOfVessels ) * 100 ) + "%)";
                 }
             }
         }
 
-        private void HandleVesselUpdate(byte[] messageData)
-        {
+        private void HandleVesselUpdate(byte[] messageData) {
             VesselUpdate update = new VesselUpdate();
-            using (MessageReader mr = new MessageReader(messageData))
-            {
+            using (MessageReader mr = new MessageReader(messageData)) {
                 update.planetTime = mr.Read<double>();
                 update.vesselID = new Guid(mr.Read<string>());
                 update.bodyName = mr.Read<string>();
@@ -1334,78 +1087,61 @@ namespace DarkMultiPlayer
                 update.actiongroupControls = mr.Read<bool[]>();
                 //Position/velocity
                 update.isSurfaceUpdate = mr.Read<bool>();
-                if (update.isSurfaceUpdate)
-                {
+                if (update.isSurfaceUpdate) {
                     update.position = mr.Read<double[]>();
                     update.velocity = mr.Read<double[]>();
                     update.acceleration = mr.Read<double[]>();
                     update.terrainNormal = mr.Read<float[]>();
-                }
-                else
-                {
+                } else {
                     update.orbit = mr.Read<double[]>();
                 }
                 VesselWorker.fetch.QueueVesselUpdate(update);
             }
         }
 
-        private void HandleSetActiveVessel(byte[] messageData)
-        {
-            using (MessageReader mr = new MessageReader(messageData))
-            {
+        private void HandleSetActiveVessel(byte[] messageData) {
+            using (MessageReader mr = new MessageReader(messageData)) {
                 string player = mr.Read<string>();
                 Guid vesselID = new Guid(mr.Read<string>());
                 VesselWorker.fetch.QueueActiveVessel(player, vesselID);
             }
         }
 
-        private void HandleVesselComplete()
-        {
+        private void HandleVesselComplete() {
             state = ClientState.VESSELS_SYNCED;
         }
 
-        private void HandleVesselRemove(byte[] messageData)
-        {
-            using (MessageReader mr = new MessageReader(messageData))
-            {
+        private void HandleVesselRemove(byte[] messageData) {
+            using (MessageReader mr = new MessageReader(messageData)) {
                 double planetTime = mr.Read<double>();
                 Guid vesselID = new Guid(mr.Read<string>());
                 bool isDockingUpdate = mr.Read<bool>();
                 string dockingPlayer = null;
-                if (isDockingUpdate)
-                {
+                if (isDockingUpdate) {
                     DarkLog.Debug("Got a docking update!");
                     dockingPlayer = mr.Read<string>();
-                }
-                else
-                {
+                } else {
                     DarkLog.Debug("Got removal command for vessel " + vesselID);
                 }
                 VesselWorker.fetch.QueueVesselRemove(vesselID, planetTime, isDockingUpdate, dockingPlayer);
             }
         }
 
-        private void HandleCraftLibrary(byte[] messageData)
-        {
-            using (MessageReader mr = new MessageReader(messageData))
-            {
-                CraftMessageType messageType = (CraftMessageType)mr.Read<int>();
-                switch (messageType)
-                {
+        private void HandleCraftLibrary(byte[] messageData) {
+            using (MessageReader mr = new MessageReader(messageData)) {
+                CraftMessageType messageType = (CraftMessageType) mr.Read<int>();
+                switch (messageType) {
                     case CraftMessageType.LIST:
                         {
                             string[] playerList = mr.Read<string[]>();
-                            foreach (string player in playerList)
-                            {
+                            foreach (string player in playerList) {
                                 bool vabExists = mr.Read<bool>();
                                 bool sphExists = mr.Read<bool>();
                                 bool subassemblyExists = mr.Read<bool>();
                                 DarkLog.Debug("Player: " + player + ", VAB: " + vabExists + ", SPH: " + sphExists + ", SUBASSEMBLY" + subassemblyExists);
-                                if (vabExists)
-                                {
+                                if (vabExists) {
                                     string[] vabCrafts = mr.Read<string[]>();
-                                    foreach (string vabCraft in vabCrafts)
-                                    {
+                                    foreach (string vabCraft in vabCrafts) {
                                         CraftChangeEntry cce = new CraftChangeEntry();
                                         cce.playerName = player;
                                         cce.craftType = CraftType.VAB;
@@ -1413,11 +1149,9 @@ namespace DarkMultiPlayer
                                         CraftLibraryWorker.fetch.QueueCraftAdd(cce);
                                     }
                                 }
-                                if (sphExists)
-                                {
+                                if (sphExists) {
                                     string[] sphCrafts = mr.Read<string[]>();
-                                    foreach (string sphCraft in sphCrafts)
-                                    {
+                                    foreach (string sphCraft in sphCrafts) {
                                         CraftChangeEntry cce = new CraftChangeEntry();
                                         cce.playerName = player;
                                         cce.craftType = CraftType.SPH;
@@ -1425,11 +1159,9 @@ namespace DarkMultiPlayer
                                         CraftLibraryWorker.fetch.QueueCraftAdd(cce);
                                     }
                                 }
-                                if (subassemblyExists)
-                                {
+                                if (subassemblyExists) {
                                     string[] subassemblyCrafts = mr.Read<string[]>();
-                                    foreach (string subassemblyCraft in subassemblyCrafts)
-                                    {
+                                    foreach (string subassemblyCraft in subassemblyCrafts) {
                                         CraftChangeEntry cce = new CraftChangeEntry();
                                         cce.playerName = player;
                                         cce.craftType = CraftType.SUBASSEMBLY;
@@ -1444,7 +1176,7 @@ namespace DarkMultiPlayer
                         {
                             CraftChangeEntry cce = new CraftChangeEntry();
                             cce.playerName = mr.Read<string>();
-                            cce.craftType = (CraftType)mr.Read<int>();
+                            cce.craftType = (CraftType) mr.Read<int>();
                             cce.craftName = mr.Read<string>();
                             CraftLibraryWorker.fetch.QueueCraftAdd(cce);
                             ChatWorker.fetch.QueueChannelMessage(ChatWorker.fetch.consoleIdentifier, "", cce.playerName + " shared " + cce.craftName + " (" + cce.craftType + ")");
@@ -1454,7 +1186,7 @@ namespace DarkMultiPlayer
                         {
                             CraftChangeEntry cce = new CraftChangeEntry();
                             cce.playerName = mr.Read<string>();
-                            cce.craftType = (CraftType)mr.Read<int>();
+                            cce.craftType = (CraftType) mr.Read<int>();
                             cce.craftName = mr.Read<string>();
                             CraftLibraryWorker.fetch.QueueCraftDelete(cce);
                         }
@@ -1463,16 +1195,13 @@ namespace DarkMultiPlayer
                         {
                             CraftResponseEntry cre = new CraftResponseEntry();
                             cre.playerName = mr.Read<string>();
-                            cre.craftType = (CraftType)mr.Read<int>();
+                            cre.craftType = (CraftType) mr.Read<int>();
                             cre.craftName = mr.Read<string>();
                             bool hasCraft = mr.Read<bool>();
-                            if (hasCraft)
-                            {
+                            if (hasCraft) {
                                 cre.craftData = mr.Read<byte[]>();
                                 CraftLibraryWorker.fetch.QueueCraftResponse(cre);
-                            }
-                            else
-                            {
+                            } else {
                                 ScreenMessages.PostScreenMessage("Craft " + cre.craftName + " from " + cre.playerName + " not available", 5f, ScreenMessageStyle.UPPER_CENTER);
                             }
                         }
@@ -1481,13 +1210,10 @@ namespace DarkMultiPlayer
             }
         }
 
-        private void HandleScreenshotLibrary(byte[] messageData)
-        {
-            using (MessageReader mr = new MessageReader(messageData))
-            {
-                ScreenshotMessageType messageType = (ScreenshotMessageType)mr.Read<int>();
-                switch (messageType)
-                {
+        private void HandleScreenshotLibrary(byte[] messageData) {
+            using (MessageReader mr = new MessageReader(messageData)) {
+                ScreenshotMessageType messageType = (ScreenshotMessageType) mr.Read<int>();
+                switch (messageType) {
                     case ScreenshotMessageType.SEND_START_NOTIFY:
                         {
                             string fromPlayer = mr.Read<string>();
@@ -1519,43 +1245,34 @@ namespace DarkMultiPlayer
             }
         }
 
-        private void HandlePingReply(byte[] messageData)
-        {
-            using (MessageReader mr = new MessageReader(messageData))
-            {
-                int pingTime = (int)((DateTime.UtcNow.Ticks - mr.Read<long>()) / 10000f);
+        private void HandlePingReply(byte[] messageData) {
+            using (MessageReader mr = new MessageReader(messageData)) {
+                int pingTime = (int) ( ( DateTime.UtcNow.Ticks - mr.Read<long>() ) / 10000f );
                 ChatWorker.fetch.QueueChannelMessage(ChatWorker.fetch.consoleIdentifier, "", "Ping: " + pingTime + "ms.");
             }
 
         }
 
-        private void HandleMotdReply(byte[] messageData)
-        {
-            using (MessageReader mr = new MessageReader(messageData))
-            {
+        private void HandleMotdReply(byte[] messageData) {
+            using (MessageReader mr = new MessageReader(messageData)) {
                 serverMotd = mr.Read<string>();
-                if (serverMotd != "")
-                {
+                if (serverMotd != "") {
                     displayMotd = true;
                     ChatWorker.fetch.QueueChannelMessage(ChatWorker.fetch.consoleIdentifier, "", serverMotd);
                 }
             }
         }
 
-        private void HandleWarpControl(byte[] messageData)
-        {
+        private void HandleWarpControl(byte[] messageData) {
             WarpWorker.fetch.QueueWarpMessage(messageData);
         }
 
-        private void HandleSplitMessage(byte[] messageData)
-        {
-            if (!isReceivingSplitMessage)
-            {
+        private void HandleSplitMessage(byte[] messageData) {
+            if (!isReceivingSplitMessage) {
                 //New split message
-                using (MessageReader mr = new MessageReader(messageData))
-                {
+                using (MessageReader mr = new MessageReader(messageData)) {
                     receiveSplitMessage = new ServerMessage();
-                    receiveSplitMessage.type = (ServerMessageType)mr.Read<int>();
+                    receiveSplitMessage.type = (ServerMessageType) mr.Read<int>();
                     receiveSplitMessage.data = new byte[mr.Read<int>()];
                     receiveSplitMessageBytesLeft = receiveSplitMessage.data.Length;
                     byte[] firstSplitData = mr.Read<byte[]>();
@@ -1563,26 +1280,21 @@ namespace DarkMultiPlayer
                     receiveSplitMessageBytesLeft -= firstSplitData.Length;
                 }
                 isReceivingSplitMessage = true;
-            }
-            else
-            {
+            } else {
                 //Continued split message
                 messageData.CopyTo(receiveSplitMessage.data, receiveSplitMessage.data.Length - receiveSplitMessageBytesLeft);
                 receiveSplitMessageBytesLeft -= messageData.Length;
             }
-            if (receiveSplitMessageBytesLeft == 0)
-            {
+            if (receiveSplitMessageBytesLeft == 0) {
                 HandleMessage(receiveSplitMessage);
                 receiveSplitMessage = null;
                 isReceivingSplitMessage = false;
             }
         }
 
-        private void HandleConnectionEnd(byte[] messageData)
-        {
+        private void HandleConnectionEnd(byte[] messageData) {
             string reason = "";
-            using (MessageReader mr = new MessageReader(messageData))
-            {
+            using (MessageReader mr = new MessageReader(messageData)) {
                 reason = mr.Read<string>();
             }
             Disconnect("Server closed connection: " + reason);
@@ -1592,12 +1304,9 @@ namespace DarkMultiPlayer
 
         #region Message Sending
 
-        private void SendHeartBeat()
-        {
-            if (state >= ClientState.CONNECTED && sendMessageQueueHigh.Count == 0)
-            {
-                if ((UnityEngine.Time.realtimeSinceStartup - lastSendTime) > (Common.HEART_BEAT_INTERVAL / 1000))
-                {
+        private void SendHeartBeat() {
+            if (state >= ClientState.CONNECTED && sendMessageQueueHigh.Count == 0) {
+                if (( UnityEngine.Time.realtimeSinceStartup - lastSendTime ) > ( Common.HEART_BEAT_INTERVAL / 1000 )) {
                     lastSendTime = UnityEngine.Time.realtimeSinceStartup;
                     ClientMessage newMessage = new ClientMessage();
                     newMessage.type = ClientMessageType.HEARTBEAT;
@@ -1606,11 +1315,9 @@ namespace DarkMultiPlayer
             }
         }
 
-        private void SendHandshakeResponse(byte[] signature)
-        {
+        private void SendHandshakeResponse(byte[] signature) {
             byte[] messageBytes;
-            using (MessageWriter mw = new MessageWriter())
-            {
+            using (MessageWriter mw = new MessageWriter()) {
                 mw.Write<int>(Common.PROTOCOL_VERSION);
                 mw.Write<string>(Settings.fetch.playerName);
                 mw.Write<string>(Settings.fetch.playerPublicKey);
@@ -1625,19 +1332,16 @@ namespace DarkMultiPlayer
             QueueOutgoingMessage(newMessage, true);
         }
         //Called from ChatWindow
-        public void SendChatMessage(byte[] messageData)
-        {
+        public void SendChatMessage(byte[] messageData) {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.CHAT_MESSAGE;
             newMessage.data = messageData;
             QueueOutgoingMessage(newMessage, true);
         }
         //Called from PlayerStatusWorker
-        public void SendPlayerStatus(PlayerStatus playerStatus)
-        {
+        public void SendPlayerStatus(PlayerStatus playerStatus) {
             byte[] messageBytes;
-            using (MessageWriter mw = new MessageWriter())
-            {
+            using (MessageWriter mw = new MessageWriter()) {
                 mw.Write<string>(playerStatus.playerName);
                 mw.Write<string>(playerStatus.vesselText);
                 mw.Write<string>(playerStatus.statusText);
@@ -1649,19 +1353,16 @@ namespace DarkMultiPlayer
             QueueOutgoingMessage(newMessage, true);
         }
         //Called from PlayerColorWorker
-        public void SendPlayerColorMessage(byte[] messageData)
-        {
+        public void SendPlayerColorMessage(byte[] messageData) {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.PLAYER_COLOR;
             newMessage.data = messageData;
             QueueOutgoingMessage(newMessage, false);
         }
         //Called from timeSyncer
-        public void SendTimeSync()
-        {
+        public void SendTimeSync() {
             byte[] messageBytes;
-            using (MessageWriter mw = new MessageWriter())
-            {
+            using (MessageWriter mw = new MessageWriter()) {
                 mw.Write<long>(DateTime.UtcNow.Ticks);
                 messageBytes = mw.GetMessageBytes();
             }
@@ -1671,94 +1372,117 @@ namespace DarkMultiPlayer
             QueueOutgoingMessage(newMessage, true);
         }
 
-        private void SendKerbalsRequest()
-        {
+        private void SendKerbalsRequest() {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.KERBALS_REQUEST;
             QueueOutgoingMessage(newMessage, true);
         }
 
-        private void SendVesselsRequest(string[] requestList)
-        {
+        private void SendVesselsRequest(string[] requestList) {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.VESSELS_REQUEST;
-            using (MessageWriter mw = new MessageWriter())
-            {
+            using (MessageWriter mw = new MessageWriter()) {
                 mw.Write<string[]>(requestList);
                 newMessage.data = mw.GetMessageBytes();
             }
             QueueOutgoingMessage(newMessage, true);
         }
 
-        private bool VesselHasNaNPosition(ProtoVessel pv)
-        {
-            if (pv.landed || pv.splashed)
-            {
+        private bool VesselHasNaNPosition(ProtoVessel pv) {
+            if (pv.landed || pv.splashed) {
                 //Ground checks
-                if (double.IsNaN(pv.latitude) || double.IsInfinity(pv.latitude))
-                {
+                if (double.IsNaN(pv.latitude) || double.IsInfinity(pv.latitude)) {
                     return true;
                 }
-                if (double.IsNaN(pv.longitude) || double.IsInfinity(pv.longitude))
-                {
+                if (double.IsNaN(pv.longitude) || double.IsInfinity(pv.longitude)) {
                     return true;
                 }
-                if (double.IsNaN(pv.altitude) || double.IsInfinity(pv.altitude))
-                {
+                if (double.IsNaN(pv.altitude) || double.IsInfinity(pv.altitude)) {
                     return true;
                 }
-            }
-            else
-            {
+            } else {
                 //Orbit checks
-                if (double.IsNaN(pv.orbitSnapShot.argOfPeriapsis) || double.IsInfinity(pv.orbitSnapShot.argOfPeriapsis))
-                {
+                if (double.IsNaN(pv.orbitSnapShot.argOfPeriapsis) || double.IsInfinity(pv.orbitSnapShot.argOfPeriapsis)) {
                     return true;
                 }
-                if (double.IsNaN(pv.orbitSnapShot.eccentricity) || double.IsInfinity(pv.orbitSnapShot.eccentricity))
-                {
+                if (double.IsNaN(pv.orbitSnapShot.eccentricity) || double.IsInfinity(pv.orbitSnapShot.eccentricity)) {
                     return true;
                 }
-                if (double.IsNaN(pv.orbitSnapShot.epoch) || double.IsInfinity(pv.orbitSnapShot.epoch))
-                {
+                if (double.IsNaN(pv.orbitSnapShot.epoch) || double.IsInfinity(pv.orbitSnapShot.epoch)) {
                     return true;
                 }
-                if (double.IsNaN(pv.orbitSnapShot.inclination) || double.IsInfinity(pv.orbitSnapShot.inclination))
-                {
+                if (double.IsNaN(pv.orbitSnapShot.inclination) || double.IsInfinity(pv.orbitSnapShot.inclination)) {
                     return true;
                 }
-                if (double.IsNaN(pv.orbitSnapShot.LAN) || double.IsInfinity(pv.orbitSnapShot.LAN))
-                {
+                if (double.IsNaN(pv.orbitSnapShot.LAN) || double.IsInfinity(pv.orbitSnapShot.LAN)) {
                     return true;
                 }
-                if (double.IsNaN(pv.orbitSnapShot.meanAnomalyAtEpoch) || double.IsInfinity(pv.orbitSnapShot.meanAnomalyAtEpoch))
-                {
+                if (double.IsNaN(pv.orbitSnapShot.meanAnomalyAtEpoch) || double.IsInfinity(pv.orbitSnapShot.meanAnomalyAtEpoch)) {
                     return true;
                 }
-                if (double.IsNaN(pv.orbitSnapShot.semiMajorAxis) || double.IsInfinity(pv.orbitSnapShot.semiMajorAxis))
-                {
+                if (double.IsNaN(pv.orbitSnapShot.semiMajorAxis) || double.IsInfinity(pv.orbitSnapShot.semiMajorAxis)) {
                     return true;
                 }
             }
-            
+
             return false;
         }
 
+        public void SendTechnologyResearched(TechTransfer tt) {
+            ClientMessage newMessage = new ClientMessage();
+            newMessage.type = ClientMessageType.RESEARCH_LIBRARY;
+
+            using (MessageWriter mw = new MessageWriter()) {
+                mw.Write<int>((int) ResearchMessageType.TECHRESEARCHED);
+
+                mw.Write<string>(tt.id);
+                mw.Write<string>(tt.state.ToString());
+                mw.Write<int>(tt.cost);
+                mw.Write<int>(tt.parts.Count);
+                foreach (string part in tt.parts) {
+                    mw.Write<string>(part);
+                }
+
+                newMessage.data = mw.GetMessageBytes();
+            }
+            DarkLog.Debug("Sending TechnologyResearched: " + tt.id);
+            QueueOutgoingMessage(newMessage, true);
+        }
+
+        public void SendScienceRecieved(ScienceTransfer st) {
+            ClientMessage newMessage = new ClientMessage();
+            newMessage.type = ClientMessageType.RESEARCH_LIBRARY;
+
+            using (MessageWriter mw = new MessageWriter()) {
+                mw.Write<int>((int) ResearchMessageType.SCIENCERECIEVED);
+
+                mw.Write<float>(st.dataAmount);
+
+                mw.Write<string>(st.id);
+                mw.Write<string>(st.title);
+                mw.Write<float>(st.dataScale);
+                mw.Write<float>(st.subjectValue);
+                mw.Write<float>(st.scientificValue);
+                mw.Write<float>(st.cap);
+                mw.Write<float>(st.science);
+
+                newMessage.data = mw.GetMessageBytes();
+            }
+            DarkLog.Debug("Sending ScienceRecieved: " + st.id);
+            QueueOutgoingMessage(newMessage, true);
+
+        }
+
         //Called from vesselWorker
-        public void SendVesselProtoMessage(ProtoVessel vessel, bool isDockingUpdate, bool isFlyingUpdate)
-        {
+        public void SendVesselProtoMessage(ProtoVessel vessel, bool isDockingUpdate, bool isFlyingUpdate) {
             //Defend against NaN orbits
-            if (VesselHasNaNPosition(vessel))
-            {
+            if (VesselHasNaNPosition(vessel)) {
                 DarkLog.Debug("Vessel " + vessel.vesselID + " has NaN position");
                 return;
             }
-            foreach (ProtoPartSnapshot pps in vessel.protoPartSnapshots)
-            {
-                foreach (ProtoCrewMember pcm in pps.protoModuleCrew.ToArray())
-                {
-                    if (pcm.type == ProtoCrewMember.KerbalType.Tourist)
-                    {
+            foreach (ProtoPartSnapshot pps in vessel.protoPartSnapshots) {
+                foreach (ProtoCrewMember pcm in pps.protoModuleCrew.ToArray()) {
+                    if (pcm.type == ProtoCrewMember.KerbalType.Tourist) {
                         pps.protoModuleCrew.Remove(pcm);
                     }
                 }
@@ -1769,11 +1493,9 @@ namespace DarkMultiPlayer
             newMessage.type = ClientMessageType.VESSEL_PROTO;
             byte[] vesselBytes = ConfigNodeSerializer.fetch.Serialize(vesselNode);
             File.WriteAllBytes(Path.Combine(KSPUtil.ApplicationRootPath, "lastVessel.txt"), vesselBytes);
-            if (vesselBytes != null && vesselBytes.Length > 0)
-            {
+            if (vesselBytes != null && vesselBytes.Length > 0) {
                 UniverseSyncCache.fetch.QueueToCache(vesselBytes);
-                using (MessageWriter mw = new MessageWriter())
-                {
+                using (MessageWriter mw = new MessageWriter()) {
                     mw.Write<double>(Planetarium.GetUniversalTime());
                     mw.Write<string>(vessel.vesselID.ToString());
                     mw.Write<bool>(isDockingUpdate);
@@ -1783,19 +1505,15 @@ namespace DarkMultiPlayer
                 }
                 DarkLog.Debug("Sending vessel " + vessel.vesselID + ", name " + vessel.vesselName + ", type: " + vessel.vesselType + ", size: " + newMessage.data.Length);
                 QueueOutgoingMessage(newMessage, false);
-            }
-            else
-            {
+            } else {
                 DarkLog.Debug("Failed to create byte[] data for " + vessel.vesselID);
             }
         }
         //Called from vesselWorker
-        public void SendVesselUpdate(VesselUpdate update)
-        {
+        public void SendVesselUpdate(VesselUpdate update) {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.VESSEL_UPDATE;
-            using (MessageWriter mw = new MessageWriter())
-            {
+            using (MessageWriter mw = new MessageWriter()) {
                 mw.Write<double>(update.planetTime);
                 mw.Write<string>(update.vesselID.ToString());
                 mw.Write<string>(update.bodyName);
@@ -1826,15 +1544,12 @@ namespace DarkMultiPlayer
                 mw.Write<bool[]>(update.actiongroupControls);
                 //Position/velocity
                 mw.Write<bool>(update.isSurfaceUpdate);
-                if (update.isSurfaceUpdate)
-                {
+                if (update.isSurfaceUpdate) {
                     mw.Write<double[]>(update.position);
                     mw.Write<double[]>(update.velocity);
                     mw.Write<double[]>(update.acceleration);
                     mw.Write<float[]>(update.terrainNormal);
-                }
-                else
-                {
+                } else {
                     mw.Write<double[]>(update.orbit);
                 }
                 newMessage.data = mw.GetMessageBytes();
@@ -1842,18 +1557,15 @@ namespace DarkMultiPlayer
             QueueOutgoingMessage(newMessage, false);
         }
         //Called from vesselWorker
-        public void SendVesselRemove(Guid vesselID, bool isDockingUpdate)
-        {
+        public void SendVesselRemove(Guid vesselID, bool isDockingUpdate) {
             DarkLog.Debug("Removing " + vesselID + " from the server");
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.VESSEL_REMOVE;
-            using (MessageWriter mw = new MessageWriter())
-            {
+            using (MessageWriter mw = new MessageWriter()) {
                 mw.Write<double>(Planetarium.GetUniversalTime());
                 mw.Write<string>(vesselID.ToString());
                 mw.Write<bool>(isDockingUpdate);
-                if (isDockingUpdate)
-                {
+                if (isDockingUpdate) {
                     mw.Write<string>(Settings.fetch.playerName);
                 }
                 newMessage.data = mw.GetMessageBytes();
@@ -1861,31 +1573,26 @@ namespace DarkMultiPlayer
             QueueOutgoingMessage(newMessage, false);
         }
         //Called fro craftLibraryWorker
-        public void SendCraftLibraryMessage(byte[] messageData)
-        {
+        public void SendCraftLibraryMessage(byte[] messageData) {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.CRAFT_LIBRARY;
             newMessage.data = messageData;
             QueueOutgoingMessage(newMessage, false);
         }
         //Called from ScreenshotWorker
-        public void SendScreenshotMessage(byte[] messageData)
-        {
+        public void SendScreenshotMessage(byte[] messageData) {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.SCREENSHOT_LIBRARY;
             newMessage.data = messageData;
             QueueOutgoingMessage(newMessage, false);
         }
         //Called from ScenarioWorker
-        public void SendScenarioModuleData(string[] scenarioNames, byte[][] scenarioData)
-        {
+        public void SendScenarioModuleData(string[] scenarioNames, byte[][] scenarioData) {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.SCENARIO_DATA;
-            using (MessageWriter mw = new MessageWriter())
-            {
+            using (MessageWriter mw = new MessageWriter()) {
                 mw.Write<string[]>(scenarioNames);
-                foreach (byte[] scenarioBytes in scenarioData)
-                {
+                foreach (byte[] scenarioBytes in scenarioData) {
                     mw.Write<byte[]>(Compression.CompressIfNeeded(scenarioBytes));
                 }
                 newMessage.data = mw.GetMessageBytes();
@@ -1894,15 +1601,12 @@ namespace DarkMultiPlayer
             QueueOutgoingMessage(newMessage, false);
         }
         // Same method as above, only that in this, the message is queued as high priority
-        public void SendScenarioModuleDataHighPriority(string[] scenarioNames, byte[][] scenarioData)
-        {
+        public void SendScenarioModuleDataHighPriority(string[] scenarioNames, byte[][] scenarioData) {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.SCENARIO_DATA;
-            using (MessageWriter mw = new MessageWriter())
-            {
+            using (MessageWriter mw = new MessageWriter()) {
                 mw.Write<string[]>(scenarioNames);
-                foreach (byte[] scenarioBytes in scenarioData)
-                {
+                foreach (byte[] scenarioBytes in scenarioData) {
                     mw.Write<byte[]>(Compression.CompressIfNeeded(scenarioBytes));
                 }
                 newMessage.data = mw.GetMessageBytes();
@@ -1911,14 +1615,11 @@ namespace DarkMultiPlayer
             QueueOutgoingMessage(newMessage, true);
         }
 
-        public void SendKerbalProtoMessage(string kerbalName, byte[] kerbalBytes)
-        {
-            if (kerbalBytes != null && kerbalBytes.Length > 0)
-            {
+        public void SendKerbalProtoMessage(string kerbalName, byte[] kerbalBytes) {
+            if (kerbalBytes != null && kerbalBytes.Length > 0) {
                 ClientMessage newMessage = new ClientMessage();
                 newMessage.type = ClientMessageType.KERBAL_PROTO;
-                using (MessageWriter mw = new MessageWriter())
-                {
+                using (MessageWriter mw = new MessageWriter()) {
                     mw.Write<double>(Planetarium.GetUniversalTime());
                     mw.Write<string>(kerbalName);
                     mw.Write<byte[]>(kerbalBytes);
@@ -1926,50 +1627,42 @@ namespace DarkMultiPlayer
                 }
                 DarkLog.Debug("Sending kerbal " + kerbalName + ", size: " + newMessage.data.Length);
                 QueueOutgoingMessage(newMessage, false);
-            }
-            else
-            {
+            } else {
                 DarkLog.Debug("Failed to create byte[] data for kerbal " + kerbalName);
             }
         }
         //Called from chatWorker
-        public void SendPingRequest()
-        {
+        public void SendPingRequest() {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.PING_REQUEST;
-            using (MessageWriter mw = new MessageWriter())
-            {
+            using (MessageWriter mw = new MessageWriter()) {
                 mw.Write<long>(DateTime.UtcNow.Ticks);
                 newMessage.data = mw.GetMessageBytes();
             }
             QueueOutgoingMessage(newMessage, true);
         }
         //Called from networkWorker
-        public void SendMotdRequest()
-        {
+        public void SendMotdRequest() {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.MOTD_REQUEST;
             QueueOutgoingMessage(newMessage, true);
         }
         //Called from FlagSyncer
-        public void SendFlagMessage(byte[] messageData)
-        {
+        public void SendFlagMessage(byte[] messageData) {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.FLAG_SYNC;
             newMessage.data = messageData;
             QueueOutgoingMessage(newMessage, false);
         }
         //Called from warpWorker
-        public void SendWarpMessage(byte[] messageData)
-        {
+        public void SendWarpMessage(byte[] messageData) {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.WARP_CONTROL;
             newMessage.data = messageData;
             QueueOutgoingMessage(newMessage, true);
         }
         //Called from lockSystem
-        public void SendLockSystemMessage(byte[] messageData)
-        {
+        public void SendLockSystemMessage(byte[] messageData) {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.LOCK_SYSTEM;
             newMessage.data = messageData;
@@ -1979,24 +1672,20 @@ namespace DarkMultiPlayer
         /// <summary>
         /// If you are a mod, call DMPModInterface.fetch.SendModMessage.
         /// </summary>
-        public void SendModMessage(byte[] messageData, bool highPriority)
-        {
+        public void SendModMessage(byte[] messageData, bool highPriority) {
             ClientMessage newMessage = new ClientMessage();
             newMessage.type = ClientMessageType.MOD_DATA;
             newMessage.data = messageData;
             QueueOutgoingMessage(newMessage, highPriority);
         }
         //Called from main
-        public void SendDisconnect(string disconnectReason = "Unknown")
-        {
-            if (state != ClientState.DISCONNECTING && state >= ClientState.CONNECTED)
-            {
+        public void SendDisconnect(string disconnectReason = "Unknown") {
+            if (state != ClientState.DISCONNECTING && state >= ClientState.CONNECTED) {
                 DarkLog.Debug("Sending disconnect message, reason: " + disconnectReason);
                 Client.fetch.status = "Disconnected: " + disconnectReason;
                 state = ClientState.DISCONNECTING;
                 byte[] messageBytes;
-                using (MessageWriter mw = new MessageWriter())
-                {
+                using (MessageWriter mw = new MessageWriter()) {
                     mw.Write<string>(disconnectReason);
                     messageBytes = mw.GetMessageBytes();
                 }
@@ -2007,10 +1696,8 @@ namespace DarkMultiPlayer
             }
         }
 
-        public long GetStatistics(string statType)
-        {
-            switch (statType)
-            {
+        public long GetStatistics(string statType) {
+            switch (statType) {
                 case "HighPriorityQueueLength":
                     return sendMessageQueueHigh.Count;
                 case "SplitPriorityQueueLength":
@@ -2024,9 +1711,9 @@ namespace DarkMultiPlayer
                 case "ReceivedBytes":
                     return bytesReceived;
                 case "LastReceiveTime":
-                    return (int)((UnityEngine.Time.realtimeSinceStartup - lastReceiveTime) * 1000);
+                    return (int) ( ( UnityEngine.Time.realtimeSinceStartup - lastReceiveTime ) * 1000 );
                 case "LastSendTime":
-                    return (int)((UnityEngine.Time.realtimeSinceStartup - lastSendTime) * 1000);
+                    return (int) ( ( UnityEngine.Time.realtimeSinceStartup - lastSendTime ) * 1000 );
             }
             return 0;
         }
@@ -2034,8 +1721,7 @@ namespace DarkMultiPlayer
         #endregion
     }
 
-    class DMPServerAddress
-    {
+    class DMPServerAddress {
         public string ip;
         public int port;
     }

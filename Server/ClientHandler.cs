@@ -647,6 +647,9 @@ namespace DarkMultiPlayerServer
                     case ClientMessageType.CONNECTION_END:
                         Messages.ConnectionEnd.HandleConnectionEnd(client, message.data);
                         break;
+                    case ClientMessageType.RESEARCH_LIBRARY:
+                        Messages.ResearchLibrary.HandleResearchMessage(client, message.data);
+                        break;
                     default:
                         DarkLog.Debug("Unhandled message type " + message.type);
                         Messages.ConnectionEnd.SendConnectionEnd(client, "Unhandled message type " + message.type);

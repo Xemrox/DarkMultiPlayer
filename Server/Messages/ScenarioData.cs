@@ -2,6 +2,8 @@
 using System.IO;
 using MessageStream2;
 using DarkMultiPlayerCommon;
+using System.Collections.Generic;
+using System.Globalization;
 
 namespace DarkMultiPlayerServer.Messages
 {
@@ -17,7 +19,51 @@ namespace DarkMultiPlayerServer.Messages
             {
                 //Remove the .txt part for the name
                 scenarioNames[currentScenarioModule] = Path.GetFileNameWithoutExtension(file);
-                scenarioDataArray[currentScenarioModule] = File.ReadAllBytes(file);
+                if (scenarioNames[currentScenarioModule] == "ResearchAndDevelopment") {
+                    CultureInfo ci = CultureInfo.CreateSpecificCulture("en-US");
+
+                    using (MemoryStream ms = new MemoryStream())
+                    using (StreamWriter wr = new StreamWriter(ms)) {
+                        wr.WriteLine("name = ResearchAndDevelopment");
+                        wr.WriteLine("scene = 7, 8, 5, 6");
+                        wr.WriteLine(string.Format("sci = {0}", DarkMultiPlayerServer.ResearchLibrary.fetch.ScienceAmount.ToString("0.00",ci)));
+
+                        foreach(KeyValuePair<string,TechTransfer> kv in DarkMultiPlayerServer.ResearchLibrary.fetch.TechNodes) {
+                            var node = kv.Value;
+                            wr.WriteLine("Tech");
+                            wr.WriteLine("{");
+                            wr.WriteLine(string.Format("\tid = {0}",node.id));
+                            wr.WriteLine(string.Format("\tstate = {0}",node.state.ToString()));
+                            wr.WriteLine(string.Format("\tcost = {0}",node.cost.ToString("",ci)));
+                            foreach(var p in node.parts) {
+                                wr.WriteLine(string.Format("\tpart = {0}", p));
+                            }
+                            wr.WriteLine("}");
+                        }
+
+                        foreach (KeyValuePair<string, ScienceTransfer> kv in DarkMultiPlayerServer.ResearchLibrary.fetch.ScienceNodes) {
+                            var node = kv.Value;
+                            wr.WriteLine("Science");
+                            wr.WriteLine("{");
+                            wr.WriteLine(string.Format("\tid = {0}", node.id));
+                            wr.WriteLine(string.Format("\ttitle = {0}", node.title));
+                            wr.WriteLine(string.Format("\tdsc = {0}", node.dataScale.ToString("0.00",ci)));
+                            wr.WriteLine(string.Format("\tscv = {0}", node.scientificValue.ToString("0.00",ci)));
+                            wr.WriteLine(string.Format("\tsbv = {0}", node.subjectValue.ToString("0.00",ci)));
+                            wr.WriteLine(string.Format("\tsci = {0}", node.science.ToString("0.00",ci)));
+                            wr.WriteLine(string.Format("\tcap = {0}", node.cap.ToString("0.00",ci)));
+                            wr.WriteLine("}");
+                        }
+                        wr.WriteLine("");
+                        wr.Flush();
+                        scenarioDataArray[currentScenarioModule] = ms.ToArray();
+
+                        File.WriteAllBytes("latestRAD.txt", scenarioDataArray[currentScenarioModule]);
+                    }
+
+                } else {
+                    scenarioDataArray[currentScenarioModule] = File.ReadAllBytes(file);
+                }
                 currentScenarioModule++;
             }
             ServerMessage newMessage = new ServerMessage();

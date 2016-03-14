@@ -1,0 +1,12 @@
+D:\GProjects\DarkMultiPlayer\InjectedThings\bin\Debug\InjectedThings.dll
+D:\GProjects\DarkMultiPlayer\InjectedThings\bin\Debug\InjectedThings.pdb
+D:\GProjects\DarkMultiPlayer\InjectedThings\obj\Debug\InjectedThings.csprojResolveAssemblyReference.cache
+D:\GProjects\DarkMultiPlayer\InjectedThings\obj\Debug\InjectedThings.dll
+D:\GProjects\DarkMultiPlayer\InjectedThings\obj\Debug\InjectedThings.pdb
+D:\GProjects\DarkMultiPlayer\InjectedThings\bin\Debug\Assembly-CSharp.dll
+D:\GProjects\DarkMultiPlayer\InjectedThings\bin\Debug\UnityEngine.dll
+D:\GProjects\DarkMultiPlayer\InjectedThings\bin\Debug\Assembly-CSharp-firstpass.dll
+D:\GProjects\DarkMultiPlayer\InjectedThings\bin\Debug\TDx.TDxInput.dll
+D:\GProjects\DarkMultiPlayer\InjectedThings\bin\Debug\TrackIRUnity.dll
+D:\GProjects\DarkMultiPlayer\InjectedThings\bin\Debug\Mono.Cecil.dll
+D:\GProjects\DarkMultiPlayer\InjectedThings\bin\Debug\Mono.Security.dll
